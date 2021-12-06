@@ -17,7 +17,16 @@
                     </div>
                 </div>
                 <div class="col">
-
+                    <div class="form-group">
+                        <label for="hmoemail">HMO Email</label>
+                        <input id="hmoemail" v-model="hmo.email" :name="hmo.email" class="form-control" type="email">
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="form-group">
+                        <label>Encounter Date</label>
+                        <date-picker v-model="edate" :config="date_options"></date-picker>
+                    </div>
                 </div>
             </div>
 
@@ -33,21 +42,21 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(product, index) in products" :key="index">
+                <tr v-for="(order, index) in orders" :key="index">
                     <td>
-                        <input v-model="product.item" :name="`products[${index}][item]`" class="form-control"
+                        <input v-model="order.item" :name="`orders[${index}][item]`" class="form-control"
                                type="text">
                     </td>
                     <td>
-                        <input v-model="product.price" :name="`products[${index}][price]`" class="form-control"
+                        <input v-model="order.price" :name="`orders[${index}][price]`" class="form-control"
                                type="number">
                     </td>
                     <td>
-                        <input v-model="product.qty" :name="`products[${index}][qty]`" class="form-control"
+                        <input v-model="order.qty" :name="`orders[${index}][qty]`" class="form-control"
                                type="number">
                     </td>
                     <td>
-                        <input v-model="product.subtotal" :name="`products[${index}][subtotal]`" class="form-control"
+                        <input v-model="order.subtotal" :name="`orders[${index}][subtotal]`" class="form-control"
                                readonly type="number">
                     </td>
                     <td>
@@ -78,7 +87,7 @@
 
             <hr>
 
-            <div v-show="products.length > 0" class="form-group">
+            <div v-show="orders.length > 0" class="form-group">
                 <button class="btn btn-primary" type="button" @click="submit">Submit</button>
             </div>
         </form>
@@ -89,19 +98,28 @@
 </template>
 
 <script>
+import datePicker from "vue-bootstrap-datetimepicker";
+import "@fortawesome/fontawesome-free/css/all.css";
+import "pc-bootstrap4-datetimepicker/build/css/bootstrap-datetimepicker.css";
+
 export default {
     name: "SubmitOrder",
+    components: {
+        datePicker
+    },
     mounted() {
-        console.log('Component mounted.')
+        console.log('Component mounted.');
+        this.resetForm();
     },
     data() {
         return {
+            edate : new Date,
             hmo: {
-                code: 'hmo-0-1',
-                name: 'HMO 01',
-                date: '',
+                code: 'HMO-A',
+                name: 'HMO A',
+                email: 'hmoa@site.com',
             },
-            products: [
+            orders: [
                 {
                     item: "Batch 1",
                     price: 200,
@@ -115,12 +133,27 @@ export default {
                     subtotal: 0
                 },
             ],
+            date_options: {
+                format: "DD/MM/YYYY h:m:s a",
+                useCurrent: false,
+                icons: {
+                    time: "far fa-clock",
+                    date: "far fa-calendar",
+                    up: "fas fa-arrow-up",
+                    down: "fas fa-arrow-down",
+                    previous: "fas fa-chevron-left",
+                    next: "fas fa-chevron-right",
+                    today: "fas fa-calendar-check",
+                    clear: "far fa-trash-alt",
+                    close: "far fa-times-circle",
+                },
+            },
         };
     },
     watch: {
-        products: {
+        orders: {
             handler: function (newval, oldval) {
-                this.products.forEach(p => {
+                this.orders.forEach(p => {
                     p.subtotal = p.price * p.qty;
                 });
             }, deep: true,
@@ -129,21 +162,22 @@ export default {
     },
     computed: {
         total: function () {
-            return this.products.reduce(function (total, product) {
-                return total + Number(product.subtotal);
+            return this.orders.reduce(function (total, order) {
+                return total + Number(order.subtotal);
             }, 0);
         },
         formData: function () {
             return {
+                edate: this.edate,
                 hmo: this.hmo,
-                products: this.products,
+                orders: this.orders,
                 total: this.total,
             }
         },
     },
     methods: {
         addItem() {
-            this.products.push({
+            this.orders.push({
                 item: 0,
                 price: 0,
                 qty: 0,
@@ -151,12 +185,24 @@ export default {
             })
         },
         removeItem(index) {
-            this.products.splice(index, 1);
+            this.orders.splice(index, 1);
+        },
+        resetForm() {
+           this.edate = '';
+           this.hmo = {};
+           this.orders=[];
         },
 
         submit() {
-            const data = this.formData;
-            alert(JSON.stringify(data, null, 2))
+            const self = this;
+            axios.post('/api/orderSubmit', this.formData)
+                .then(function (response) {
+                    self.resetForm();
+                    alert(response.data.message);
+                })
+                .catch(function (error) {
+                    alert("An error occurred while sending your data");
+                });
         }
     }
 }
