@@ -11,4 +11,9 @@ class Batch extends Model
     ];
 
     protected $table = "batches";
+
+    public function hmo()
+    {
+        return $this->belongsTo(Hmo::class);
+    }
 }

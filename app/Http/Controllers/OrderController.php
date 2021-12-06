@@ -12,10 +12,10 @@ use Mail;
 class OrderController extends Controller
 {
     /**
- * success response method.
- *
- * @return \Illuminate\Http\Response
- */
+    * Submit order from vue frontend
+    *
+    * @return \Illuminate\Http\Response
+    */
     public function orderSubmit(Request $request)
     {
         $data = $request->all();
@@ -61,6 +61,45 @@ class OrderController extends Controller
             $message->from('fullstack@site.com', 'FullStack Test');
         });
 
-        return response()->json(["message"=>"Order submitted successfully"],200);
+        return response()->json(["message"=>"Order submitted successfully"], 200);
+    }
+
+    /**
+    * This will batch using month of encounter
+    *
+    * @return \Illuminate\Http\Response
+    */
+    public function batchByEncounterDate(Request $request)
+    {
+        return $this->batchOrders($request, 'edate');
+    }
+
+    /**
+    * This will batch using the date encounter was sent
+    *
+    * @return \Illuminate\Http\Response
+    */
+    public function batchBySentDate(Request $request)
+    {
+        return $this->batchOrders($request, 'created_at');
+    }
+
+    /**
+    * Batch orders based on the specified date format
+    *
+    * @return \Illuminate\Http\Response
+    */
+    private function batchOrders(Request $request, String $dateFormat)
+    {
+        $result = [];
+
+        $batches = Batch::orderBy($dateFormat, 'ASC')->get();
+        foreach ($batches as $batch) {
+            $provider = $batch->hmo->name;
+            $date = Carbon::parse($dateFormat=='edate' ? $batch->edate : $batch->created_at)->format('M Y');
+            $provider.= " " . $date;
+            $result[] = $provider;
+        }
+        return response()->json([$result], 200);
     }
 }

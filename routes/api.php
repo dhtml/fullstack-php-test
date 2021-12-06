@@ -19,3 +19,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::post('orderSubmit','OrderController@orderSubmit');
+
+Route::get('order/batch/encounter/date','OrderController@batchByEncounterDate');
+Route::get('order/batch/sent/date','OrderController@batchBySentDate');
